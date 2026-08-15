@@ -305,15 +305,9 @@ window.__ModuleLoader__.load({
     // ----------------------------------------------------- completion watcher
     function ChimeWatcher(props) {
       const useSessions = typeof props.useSessions === 'function' ? props.useSessions : undefined
-      const currentId = useSessions !== undefined ? useSessions((s) => s.current) : undefined
-      const running = useSessions !== undefined
-        ? useSessions((s) => {
-          const id = s.current
-          if (id === undefined) return false
-          const row = s.byId[id]
-          return row !== undefined && row.running === true
-        })
-        : false
+      // Snapshot of every listed session row; the reference is stable between
+      // list updates, so the default Object.is equality never re-render loops.
+      const rows = useSessions !== undefined ? useSessions((s) => s.byId) : undefined
 
       // Populate the shared settings store once so the watcher honors the
       // persisted volume/mute/sound even if the settings tab was never opened.
@@ -321,16 +315,25 @@ window.__ModuleLoader__.load({
         loadSettings().catch(() => {})
       }, [])
 
-      // Completion trigger: current session running true -> false.
-      const prev = useRef(null)
+      // Completion trigger: ANY non-subagent session transitioning running
+      // true -> false rings — background tasks included. Subagent rows are
+      // skipped (their end is part of the parent task, whose own completion
+      // rings once).
+      const prev = useRef({})
       useEffect(() => {
+        if (rows === undefined) return
         const previous = prev.current
-        const sameSession = previous !== null && previous.id === currentId
-        if (sameSession && previous.running === true && running === false) {
-          playSound(store.settings ?? { volume: 55, muted: false })
+        const now = {}
+        let completed = false
+        for (const [id, row] of Object.entries(rows)) {
+          if (row.origin === 'subagent') continue
+          const isRunning = row.running === true
+          now[id] = isRunning
+          if (previous[id] === true && isRunning === false) completed = true
         }
-        prev.current = { id: currentId, running }
-      }, [currentId, running])
+        prev.current = now
+        if (completed) playSound(store.settings ?? { volume: 55, muted: false })
+      }, [rows])
 
       return null
     }
