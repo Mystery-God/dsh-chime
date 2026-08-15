@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@linxin666/dsh-chime",
     "version":  "0.1.3",
     "description":  "任务完成提示音 for the dsh web GUI: a ding-dong chime when the current session\u0027s agent turn completes, a floating volume control, and a Plugins-settings page (volume, mute, built-in sounds, custom-audio upload). Zero runtime dependencies — host half is plain Node, browser half is plain React.",
