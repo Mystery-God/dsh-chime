@@ -1,0 +1,57 @@
+{
+  "name": "@linxin666/dsh-chime",
+  "version": "0.1.0",
+  "description": "任务完成提示音 for the dsh web GUI: a ding-dong chime when the current session's agent turn completes, a floating volume control, and a Plugins-settings page (volume, mute, built-in sounds, custom-audio upload). Zero runtime dependencies — host half is plain Node, browser half is plain React.",
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "chime",
+    "notification",
+    "sound"
+  ],
+  "license": "MIT"
+}
