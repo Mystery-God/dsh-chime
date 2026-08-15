@@ -59,16 +59,37 @@ async function call(route, { method = 'GET', url, headers = {}, body = null } = 
   return { status, json, bytes: payload.length, raw: payload }
 }
 
-const byPath = (path) => routes.find((r) => r.path === path)
-const settingsRoute = byPath('/api/dsh-chime/settings')
-const uploadRoute = byPath('/api/dsh-chime/audio')
-const serveRoute = byPath('/api/dsh-chime/audio/')
+const byRoute = (kind, path) => routes.find((r) => r.kind === kind && r.path === path)
+const settingsRoute = byRoute('exact', '/api/dsh-chime/settings')
+const uploadRoute = byRoute('exact', '/api/dsh-chime/audio')
+const serveRoute = byRoute('prefix', '/api/dsh-chime/audio')
+
+/**
+ * Mirror the webserver matcher (exact table first, then longest prefix via
+ * `pathname === p || pathname.startsWith(p + '/')`) so route registration
+ * mistakes surface in tests instead of at runtime.
+ */
+function routeFor(pathname) {
+  const exact = routes.find((r) => r.kind === 'exact' && r.path === pathname)
+  if (exact !== undefined) return exact
+  let best
+  for (const r of routes) {
+    if (r.kind !== 'prefix') continue
+    if (pathname !== r.path && !pathname.startsWith(r.path + '/')) continue
+    if (best === undefined || r.path.length > best.path.length) best = r
+  }
+  return best
+}
 
 const results = []
 function check(label, condition) {
   results.push({ label, ok: condition === true })
   console.log(`${condition === true ? 'PASS' : 'FAIL'}  ${label}`)
 }
+
+// 0. route registration matches under the webserver matcher rules
+check('prefix route matches /api/dsh-chime/audio/<id>', routeFor('/api/dsh-chime/audio/2ef0df2fabb52b19') === serveRoute)
+check('exact route wins for /api/dsh-chime/audio', routeFor('/api/dsh-chime/audio') === uploadRoute)
 
 // 1. default settings
 let r = await call(settingsRoute)

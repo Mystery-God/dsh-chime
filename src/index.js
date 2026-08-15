@@ -270,8 +270,11 @@ function makeRoutes() {
       },
     },
     {
+      // Prefix path carries NO trailing slash (webserver contract): the
+      // matcher tests `pathname.startsWith(prefix + '/')`, so a trailing
+      // slash here would double up and never match.
       kind: 'prefix',
-      path: '/api/dsh-chime/audio/',
+      path: '/api/dsh-chime/audio',
       handler: async (request, response) => {
         if (!isLoopbackRequest(request)) {
           writeJson(response, 403, { error: 'untrusted origin' })
