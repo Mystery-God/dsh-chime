@@ -1,16 +1,15 @@
 /**
- * dsh-chime — browser half. Renders three surfaces:
+ * dsh-chime — browser half. Renders two surfaces:
  *
  * 1. The Plugins-settings tab (「设置 → 插件 → 任务完成提示音」): volume,
  *    mute, sound choice (built-in presets + uploaded custom audio), and a
  *    preview button. Every change PUTs to /api/dsh-chime/settings.
- * 2. A floating volume pill (bottom-left): mute toggle, slider, preview.
- * 3. An invisible completion watcher: when the current session's agent turn
+ * 2. An invisible completion watcher: when the current session's agent turn
  *    transitions running -> idle, the selected sound plays at the configured
  *    volume (skipped while muted).
  *
  * Both surfaces share one in-memory settings store, so a change in the tab
- * reaches the pill and the watcher immediately.
+ * reaches the watcher immediately.
  *
  * Module contract: `window.__ModuleLoader__.load({ id, factory })` and the
  * factory exports `{ inject, apply }` — plain React via `require('react')`,
@@ -185,16 +184,6 @@ window.__ModuleLoader__.load({
       '.dshc-sound-item{display:flex;align-items:center;gap:8px;}',
       '.dshc-muted{opacity:.55;}',
       '.dshc-error{color:#ff8a8a;margin-top:8px;}',
-      '.dshc-pill{position:fixed;left:16px;bottom:16px;z-index:2147483000;pointer-events:auto;',
-      'display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;',
-      'background:rgba(22,24,31,.9);border:1px solid rgba(255,255,255,.10);',
-      'box-shadow:0 6px 20px rgba(0,0,0,.4);font-family:ui-sans-serif,system-ui,"Segoe UI",sans-serif;',
-      'user-select:none;-webkit-user-select:none;}',
-      '.dshc-pill-btn{border:0;background:transparent;cursor:pointer;font-size:14px;line-height:1;',
-      'padding:4px;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;',
-      'justify-content:center;}',
-      '.dshc-pill-btn:hover{background:rgba(255,255,255,.12);}',
-      '.dshc-pill-range{width:110px;accent-color:#3ddc84;cursor:pointer;margin:0;}',
     ].join('')
 
     // ------------------------------------------------------- settings tab
@@ -313,8 +302,8 @@ window.__ModuleLoader__.load({
         error !== null ? React.createElement('div', { className: 'dshc-error' }, error) : null)
     }
 
-    // ----------------------------------------------------- floating pill + watcher
-    function ChimeOverlay(props) {
+    // ----------------------------------------------------- completion watcher
+    function ChimeWatcher(props) {
       const useSessions = typeof props.useSessions === 'function' ? props.useSessions : undefined
       const currentId = useSessions !== undefined ? useSessions((s) => s.current) : undefined
       const running = useSessions !== undefined
@@ -326,11 +315,10 @@ window.__ModuleLoader__.load({
         })
         : false
 
-      const [settings, setSettings] = useState(store.settings ?? { volume: 55, muted: false })
-
+      // Populate the shared settings store once so the watcher honors the
+      // persisted volume/mute/sound even if the settings tab was never opened.
       useEffect(() => {
-        loadSettings().then((value) => setSettings(value)).catch(() => {})
-        return subscribe(() => setSettings(store.settings))
+        loadSettings().catch(() => {})
       }, [])
 
       // Completion trigger: current session running true -> false.
@@ -344,27 +332,7 @@ window.__ModuleLoader__.load({
         prev.current = { id: currentId, running }
       }, [currentId, running])
 
-      const changeVolume = (value) => saveSettings({ volume: value }).catch(() => {})
-      const toggleMute = () => saveSettings({ muted: !(settings.muted === true) }).catch(() => {})
-      const preview = () => playSound({ ...settings, muted: false })
-
-      return React.createElement('div', { className: 'dshc-pill' },
-        React.createElement('button', {
-          className: 'dshc-pill-btn',
-          title: settings.muted === true ? '取消静音' : '静音',
-          onClick: toggleMute,
-        }, settings.muted === true ? '🔕' : '🔊'),
-        React.createElement('input', {
-          className: 'dshc-pill-range',
-          type: 'range',
-          min: 0,
-          max: 100,
-          step: 5,
-          value: settings.volume ?? 55,
-          onChange: (e) => changeVolume(Number(e.target.value)),
-          title: '音量 ' + (settings.volume ?? 55) + '%',
-        }),
-        React.createElement('button', { className: 'dshc-pill-btn', title: '试听', onClick: preview }, '▶'))
+      return null
     }
 
     // ---------------------------------------------------------------- plugin
@@ -386,7 +354,7 @@ window.__ModuleLoader__.load({
 
       ctx.slots.inject('shell.overlay', () => ctx.slots.register(
         { name: 'shell.overlay', id: 'dsh-chime-float', label: '任务完成提示音' },
-        (props) => React.createElement(ChimeOverlay, { useSessions: props.useSessions }),
+        (props) => React.createElement(ChimeWatcher, { useSessions: props.useSessions }),
       ))
     }
 
