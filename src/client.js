@@ -4,9 +4,10 @@
  * 1. The Plugins-settings tab (「设置 → 插件 → 任务完成提示音」): volume,
  *    mute, sound choice (built-in presets + uploaded custom audio), and a
  *    preview button. Every change PUTs to /api/dsh-chime/settings.
- * 2. An invisible completion watcher: when the current session's agent turn
- *    transitions running -> idle, the selected sound plays at the configured
- *    volume (skipped while muted).
+ * 2. An invisible completion watcher: when any non-subagent session's agent
+ *    turn transitions running -> idle, the selected sound plays at the
+ *    configured volume (skipped while muted). Background sessions included;
+ *    subagent rows are skipped so a parent task rings once.
  *
  * Both surfaces share one in-memory settings store, so a change in the tab
  * reaches the watcher immediately.
@@ -236,7 +237,7 @@ window.__ModuleLoader__.load({
 
       return React.createElement('div', { className: 'dshc-tab' },
         React.createElement('h3', null, '任务完成提示音'),
-        React.createElement('p', { className: 'dshc-desc' }, '当前会话任务结束时播放提示音；左下角悬浮条可随时静音或调音量。'),
+        React.createElement('p', { className: 'dshc-desc' }, '任务完成时播放提示音（含后台任务）；在本页调节音量与静音。'),
         React.createElement('div', { className: 'dshc-row' },
           React.createElement('label', null,
             React.createElement('input', {
